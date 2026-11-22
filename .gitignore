@@ -1,0 +1,7 @@
+# ESP-IDF
+firmware/build/
+firmware/managed_components/
+sdkconfig.old
+
+# macOS
+.DS_Store
