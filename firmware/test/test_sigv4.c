@@ -32,12 +32,12 @@ int main(void) {
         .access_key = "ASIAEJEMPLO0000000000", .secret_key = "secretoFalso/0123456789+abcdefghijklmnopqr",
         .token = "TokenFalso//con+simbolos=yMas==", .region = "us-east-1", .servicio = "bedrock-agentcore",
         .host = "bedrock-agentcore.us-east-1.amazonaws.com", .esquema = "wss",
-        .ruta = "/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A123456789012%3Aruntime%2Fasistente-AbCdE12345/ws",
+        .ruta = "/runtimes/arn%3Aaws%3Abedrock-agentcore%3Aus-east-1%3A123456789012%3Aruntime%2Fremi-AbCdE12345/ws",
         .extra_clave = "X-Amzn-Bedrock-AgentCore-Runtime-Session-Id", .extra_valor = "sesion-de-prueba-0123456789abcdef0123",
         .fecha = "20261123T030405Z", .expira = 300,
     };
     assert(sigv4_prefirmar(url, sizeof url, &ac) > 0);
-    assert(strcmp(firma(url), "a5ce0cf911dc634b94da844b760e969e53555116719703a10088bea223b0b05c") == 0);
+    assert(strcmp(firma(url), "464238b3044054ca59b3bf3556b539bcb9068a1ccc7fe0dc3781801f17f95344") == 0);
     assert(strstr(url, "X-Amz-Security-Token=TokenFalso%2F%2Fcon%2Bsimbolos%3DyMas%3D%3D"));
 
     // 3. Si no cabe, avisa en vez de cortar la URL.

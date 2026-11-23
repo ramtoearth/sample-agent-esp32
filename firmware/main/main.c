@@ -32,7 +32,7 @@ void app_main(void) {
     gpio_config_t boton = {.pin_bit_mask = 1ULL << PIN_BOTON, .mode = GPIO_MODE_INPUT, .pull_up_en = true};
     ESP_ERROR_CHECK(gpio_config(&boton));
 
-    pantalla_mostrar("Iniciando", "Conectando WiFi...");
+    pantalla_mostrar("Remi", "Conectando WiFi...");
     if (wifi_conectar(15000) != ESP_OK) {
         pantalla_mostrar("Sin WiFi", "Reintentando...\n(ver log: motivo)"); // sigue reintentando en segundo plano
     } else if (hora_sincronizar(10000) != ESP_OK) {
@@ -96,7 +96,7 @@ void app_main(void) {
         } else if (estado == ESPERANDO) {
             int rms = audio_rms(pcm, MIC_MUESTRAS_TROZO);
             snprintf(texto, sizeof texto, "BOOT = hablar\n\nNivel: %d\n%.*s", rms, audio_barras(rms, TEXTO_COLS), BARRA);
-            pantalla_mostrar(agente_conectado() ? "Listo" : "Sin agente", texto);
+            pantalla_mostrar(agente_conectado() ? "Remi" : "Sin agente", texto);
             if (i % 10 == 0) ESP_LOGI(TAG, "nivel RMS: %d", rms); // 1 vez por segundo
         }
     }

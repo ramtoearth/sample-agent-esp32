@@ -8,8 +8,8 @@
 #include "esp_http_client.h"
 #include "esp_log.h"
 
-#define THING "asistente-c3"               // = THING en infra/app.py
-#define ROLE_ALIAS "asistente-dispositivo" // = ROLE_ALIAS en infra/app.py
+#define THING "remi-c3"                    // = THING en infra/app.py
+#define ROLE_ALIAS "remi-dispositivo"      // = ROLE_ALIAS en infra/app.py
 
 // Archivos de firmware/certs/ incrustados al compilar (EMBED_TXTFILES, terminan en '\0').
 // El linker los nombra _binary_<archivo>_start; asm("...") enlaza nuestro nombre de C con ese símbolo.

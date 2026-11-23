@@ -1,6 +1,6 @@
 # Reglas del proyecto
 
-Asistente de voz físico: ESP32-C3 → AgentCore (Strands + Nova). Diseño en `docs/arquitectura.md`, hardware en `docs/componentes.md`.
+**Remi**, asistente de voz físico: ESP32-C3 → AgentCore (Strands + Nova). Diseño en `docs/arquitectura.md`, hardware en `docs/componentes.md`.
 
 ## Cómo trabajar
 

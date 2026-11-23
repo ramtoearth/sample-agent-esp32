@@ -11,14 +11,15 @@ ZONA_HORARIA = "America/Mexico_City"
 
 @tool
 def hora_actual() -> str:
-    """Devuelve la fecha y hora actual del usuario."""
+    """Devuelve la fecha y hora actual. Úsala SOLO si el usuario pregunta la hora, la fecha o el día."""
     return datetime.now(ZoneInfo(ZONA_HORARIA)).strftime("%Y-%m-%d %H:%M (%A)")
 
 
 agent = Agent(
     model=BedrockModel(model_id="amazon.nova-micro-v1:0", region_name="us-east-1"),
     system_prompt=(
-        "Eres un asistente de voz personal en español. Responde en máximo 2 oraciones cortas, "
+        "Te llamas Remi y eres un asistente de voz personal en español. Si te preguntan tu nombre "
+        "o quién eres, di que eres Remi; si no, no te presentes. Responde en máximo 2 oraciones cortas, "
         "en texto plano, sin markdown, listas ni emojis: tu respuesta se leerá en voz alta "
         "y se mostrará en una pantalla pequeña. Puedes usar libremente cualquier dato "
         "que el usuario te haya dicho en esta conversación, como su nombre."

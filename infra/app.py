@@ -1,7 +1,7 @@
-"""Infraestructura del asistente (fuente única de los recursos de AWS del proyecto).
+"""Infraestructura de Remi (fuente única de los recursos de AWS del proyecto).
 
 ESP32 ──mTLS con su certificado──► IoT Core credentials provider ──► credenciales de 1 h del RolDispositivo
-ESP32 ──WebSocket firmado (SigV4)──► AgentCore Runtime "asistente" (agent/: Transcribe + Strands)
+ESP32 ──WebSocket firmado (SigV4)──► AgentCore Runtime "remi" (agent/: Transcribe + Strands)
 """
 
 from pathlib import Path
@@ -14,15 +14,15 @@ from aws_cdk import aws_iot as iot
 from aws_cdk import aws_logs as logs
 from constructs import Construct
 
-THING = "asistente-c3"
-ROLE_ALIAS = "asistente-dispositivo"
+THING = "remi-c3"
+ROLE_ALIAS = "remi-dispositivo"
 # La llave privada se generó en la Mac y nunca sale de ahí; a AWS solo va la CSR (llave pública).
 CSR = Path(__file__).parent.parent / "firmware" / "certs" / "dispositivo.csr"
 AGENTE = Path(__file__).parent.parent / "agent"
 MODELO = "amazon.nova-micro-v1:0"  # = BedrockModel en agent/agent.py
 
 
-class AsistenteStack(cdk.Stack):
+class RemiStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
@@ -33,7 +33,7 @@ class AsistenteStack(cdk.Stack):
             "RolDispositivo",
             assumed_by=iam.ServicePrincipal("credentials.iot.amazonaws.com"),  # solo IoT Core puede asumirlo
             max_session_duration=cdk.Duration.hours(1),
-            description="Credenciales temporales del ESP32 del asistente (vía IoT Core)",
+            description="Credenciales temporales del ESP32 de Remi (vía IoT Core)",
         )
 
         # El nombre que usa el dispositivo en la URL para pedir credenciales de `rol`.
@@ -76,7 +76,7 @@ class AsistenteStack(cdk.Stack):
                     "ArnLike": {"aws:SourceArn": f"arn:aws:bedrock-agentcore:{self.region}:{self.account}:*"},
                 },
             ),
-            description="Ejecución del agente del asistente en AgentCore",
+            description="Ejecución del agente Remi en AgentCore",
         )
         imagen.repository.grant_pull(rol_agente)  # descargar la imagen
         rol_agente.add_to_policy(
@@ -107,7 +107,7 @@ class AsistenteStack(cdk.Stack):
         runtime = agentcore.CfnRuntime(
             self,
             "Agente",
-            agent_runtime_name="asistente",
+            agent_runtime_name="remi",
             agent_runtime_artifact=agentcore.CfnRuntime.AgentRuntimeArtifactProperty(
                 container_configuration=agentcore.CfnRuntime.ContainerConfigurationProperty(
                     container_uri=imagen.image_uri
@@ -117,7 +117,7 @@ class AsistenteStack(cdk.Stack):
             # PUBLIC = el contenedor sale directo a Bedrock/Transcribe. La invocación exige SigV4 igual.
             network_configuration=agentcore.CfnRuntime.NetworkConfigurationProperty(network_mode="PUBLIC"),
             protocol_configuration="HTTP",  # /ping, /invocations y el WebSocket /ws en el puerto 8080
-            description="Asistente de voz: Transcribe + Strands (Nova Micro)",
+            description="Remi, asistente de voz: Transcribe + Strands (Nova Micro)",
         )
         runtime.node.add_dependency(rol_agente)  # los permisos deben existir antes de arrancar el contenedor
 
@@ -144,6 +144,6 @@ class AsistenteStack(cdk.Stack):
 
 
 app = cdk.App()
-AsistenteStack(app, "Asistente", env=cdk.Environment(region="us-east-1"))
-cdk.Tags.of(app).add("Proyecto", "asistente")
+RemiStack(app, "Remi", env=cdk.Environment(region="us-east-1"))
+cdk.Tags.of(app).add("Proyecto", "remi")
 app.synth()

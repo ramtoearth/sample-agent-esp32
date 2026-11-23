@@ -1,5 +1,5 @@
 [project]
-name = "infra"
+name = "remi-infra"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"

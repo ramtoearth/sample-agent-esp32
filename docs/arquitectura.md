@@ -1,4 +1,4 @@
-# Arquitectura — Asistente físico
+# Arquitectura — Remi
 
 ## Flujo
 
@@ -31,7 +31,7 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 | Transporte del audio | WebSocket (no MQTT) | AgentCore acepta WebSocket; con MQTT haría falta un worker 24/7 para sostener el stream de Transcribe |
 | Base: [aws-iot-esp32-example](https://github.com/ramtoearth/aws-iot-esp32-example) | Se reutiliza: Terraform (Thing + cert + política mínima), secretos en archivo ignorado por git, certs incrustados al compilar, opciones de depuración en `sdkconfig.defaults` | Ya probado por el usuario |
 | Firmware | ESP-IDF v5.4.2; OLED con esp_lcd + fuente 5×7 propia; consola por USB-Serial-JTAG | Sin dependencias externas; UART0 (GPIO20/21) libre para la OLED. Ajustes en `firmware/sdkconfig.defaults` |
-| Infraestructura | CDK en Python (`infra/`), un solo stack `Asistente` | Fuente única de verdad: `cdk deploy`/`destroy` crea/borra todo |
+| Infraestructura | CDK en Python (`infra/`), un solo stack `Remi` | Fuente única de verdad: `cdk deploy`/`destroy` crea/borra todo |
 | Llave del dispositivo | ECC P-256 generada en la Mac; a AWS solo va la CSR | La llave privada nunca sale de la Mac ni pasa por CloudFormation |
 | Protocolo del WebSocket | Binario = PCM de 100 ms; texto `fin`; respuestas JSON `{tipo, texto}` | La misma conexión sirve para varias preguntas; Transcribe arranca con el primer trozo |
 | Runtime | Red PUBLIC, invocación solo con SigV4 (403 sin firma), logs con retención de 7 días | Sin costo fijo; VPC costaría ~$15–35 al mes |

@@ -75,7 +75,7 @@ esp_err_t agente_conectar(void) {
     if (!mensajes) {
         mensajes = xQueueCreate(4, sizeof(agente_mensaje_t));
         estado = xEventGroupCreate();
-        snprintf(sesion, sizeof sesion, "asistente-c3-%08lx%08lx%08lx", esp_random(), esp_random(), esp_random());
+        snprintf(sesion, sizeof sesion, "remi-c3-%08lx%08lx%08lx", esp_random(), esp_random(), esp_random());
     }
     if (ws) { // la conexión anterior se descarta: su URL ya caducó
         esp_websocket_client_destroy(ws);
