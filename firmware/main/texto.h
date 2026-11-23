@@ -9,6 +9,12 @@
 #define TEXTO_COLS (TEXTO_ANCHO / 6)                  // 5 px de letra + 1 de espacio = 21
 #define TEXTO_FILAS (TEXTO_ALTO / 8)                  // 1 fila de texto = 1 página = 8
 
-// Borra el framebuffer y escribe `utf8` con salto de línea por palabras. '\n' fuerza salto.
-// Lo que no cabe en las 8 filas se descarta.
-void texto_dibujar(uint8_t fb[TEXTO_FB_BYTES], const char *utf8);
+#define TEXTO_ICONO_WIFI "\x01" // íconos de la fuente (fuente.h), en códigos de control de ASCII
+#define TEXTO_ICONO_AGENTE "\x02"
+
+// Borra desde la fila `fila` hasta abajo y escribe `utf8` ahí, con salto de línea por palabras.
+// '\n' fuerza salto. Lo que no cabe se descarta.
+void texto_dibujar(uint8_t fb[TEXTO_FB_BYTES], int fila, const char *utf8);
+
+// Escribe una sola línea en (fila, col) sin borrar nada ni saltar de línea: corta a `max_cols` letras.
+void texto_linea(uint8_t fb[TEXTO_FB_BYTES], int fila, int col, int max_cols, const char *utf8);

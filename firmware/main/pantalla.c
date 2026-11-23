@@ -1,5 +1,8 @@
 #include "pantalla.h"
 
+#include <stdio.h>
+#include <string.h>
+
 #include "driver/i2c_master.h"
 #include "esp_check.h"
 #include "esp_lcd_panel_io.h"
@@ -50,7 +53,27 @@ esp_err_t pantalla_iniciar(void) {
     return esp_lcd_panel_disp_on_off(panel, true);
 }
 
-void pantalla_mostrar(const char *utf8) {
-    texto_dibujar(fb, utf8);
+static char titulo[TEXTO_COLS * 2], contenido[320]; // copia de lo último mostrado (UTF-8: hasta 2 bytes por letra)
+static bool con_wifi, con_agente;
+
+static void dibujar(void) {
+    texto_dibujar(fb, 1, contenido);
+    memset(fb, 0, TEXTO_ANCHO); // fila 0 (la barra)
+    texto_linea(fb, 0, 0, TEXTO_COLS - 3, titulo); // deja una columna de aire antes de los íconos
+    if (con_wifi) texto_linea(fb, 0, TEXTO_COLS - 2, 1, TEXTO_ICONO_WIFI);
+    if (con_agente) texto_linea(fb, 0, TEXTO_COLS - 1, 1, TEXTO_ICONO_AGENTE);
+    for (int x = 0; x < TEXTO_ANCHO; x++) fb[x] |= 0x80; // línea separadora: el bit 7 de la fila 0 está libre
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_lcd_panel_draw_bitmap(panel, 0, 0, TEXTO_ANCHO, TEXTO_ALTO, fb));
+}
+
+void pantalla_mostrar(const char *t, const char *c) {
+    snprintf(titulo, sizeof titulo, "%s", t);
+    snprintf(contenido, sizeof contenido, "%s", c);
+    dibujar();
+}
+
+void pantalla_estado(bool wifi, bool agente) {
+    if (wifi == con_wifi && agente == con_agente) return; // nada cambió: no gastar I2C
+    con_wifi = wifi, con_agente = agente;
+    dibujar();
 }

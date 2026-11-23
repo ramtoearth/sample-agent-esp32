@@ -24,9 +24,15 @@ static uint32_t leer_utf8(const char **s) {
     return '?';
 }
 
-void texto_dibujar(uint8_t fb[TEXTO_FB_BYTES], const char *s) {
-    memset(fb, 0, TEXTO_FB_BYTES);
-    int fila = 0, col = 0;
+void texto_linea(uint8_t fb[TEXTO_FB_BYTES], int fila, int col, int max_cols, const char *s) {
+    for (int fin = col + max_cols; *s && col < fin && col < TEXTO_COLS; col++)
+        memcpy(&fb[fila * TEXTO_ANCHO + col * 6], fuente_glifo(leer_utf8(&s)), 5);
+}
+
+void texto_dibujar(uint8_t fb[TEXTO_FB_BYTES], int fila, const char *s) {
+    if (fila < 0 || fila >= TEXTO_FILAS) return;
+    memset(&fb[fila * TEXTO_ANCHO], 0, (TEXTO_FILAS - fila) * TEXTO_ANCHO); // solo de `fila` para abajo
+    int col = 0;
     while (*s && fila < TEXTO_FILAS) {
         if (*s == '\n') {
             fila++, col = 0, s++;
