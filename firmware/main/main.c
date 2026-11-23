@@ -1,111 +1,101 @@
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
 
+#include "agente.h"
 #include "audio.h"
-#include "credenciales.h"
 #include "driver/gpio.h"
-#include "driver/usb_serial_jtag.h"
-#include "driver/usb_serial_jtag_vfs.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "hora.h"
 #include "mic.h"
 #include "pantalla.h"
-#include "hora.h"
 #include "texto.h"
 #include "wifi.h"
 
-#define PIN_BOTON 9 // botón BOOT de la placa: 0 = presionado (pull-up)
+#define PIN_BOTON 9              // botón BOOT de la placa: 0 = presionado (pull-up)
+#define REINTENTO_VUELTAS 100    // 100 × 100 ms = reconectar como mucho cada 10 s
+#define ESPERA_RESPUESTA 200     // 200 × 100 ms = 20 s sin respuesta → volver a esperar
 
 static const char *TAG = "main";
 
 typedef enum { ESPERANDO, GRABANDO, PENSANDO, RESPUESTA } estado_t;
 
-// Manda un trozo de audio por USB como "A:<hex>\n". Lo lee la laptop (agent/puente_usb.py).
-static void enviar_hex(const int16_t *pcm, size_t n) {
-    static char linea[2 + MIC_MUESTRAS_TROZO * 4 + 2]; // "A:" + 2 hex por byte + "\n\0"
-    static const char HEX[] = "0123456789abcdef";
-    const uint8_t *b = (const uint8_t *)pcm; // little-endian: el mismo orden que espera Transcribe
-    char *p = linea;
-    *p++ = 'A', *p++ = ':';
-    for (size_t i = 0; i < n * 2; i++) *p++ = HEX[b[i] >> 4], *p++ = HEX[b[i] & 0xF];
-    *p++ = '\n', *p = 0;
-    fputs(linea, stdout);
-}
-
-// Junta lo que llega por USB sin bloquear. Devuelve la línea cuando llega un '\n'; si no, NULL.
-static const char *leer_linea(void) {
-    static char linea[256]; // la respuesta del agente es corta (cabe en la OLED: ~170 letras)
-    static size_t largo;
-    uint8_t c;
-    while (usb_serial_jtag_read_bytes(&c, 1, 0) == 1) { // 0 = no esperar: solo lo que ya llegó
-        if (c == '\n') {
-            linea[largo] = 0, largo = 0;
-            return linea;
-        }
-        if (c != '\r' && largo < sizeof linea - 1) linea[largo++] = c; // lo que no cabe se descarta
-    }
-    return NULL;
-}
-
-static void iniciar_usb(void) {
-    // TX de 8 KB: una línea de audio (6.4 KB) cabe completa y fputs regresa enseguida.
-    usb_serial_jtag_driver_config_t cfg = {.tx_buffer_size = 8192, .rx_buffer_size = 512};
-    ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&cfg));
-    usb_serial_jtag_vfs_use_driver(); // printf/fputs también pasan por el driver
+static void conectar(void) {
+    pantalla_mostrar("Conectando con\nel agente...");
+    if (agente_conectar() != ESP_OK) pantalla_mostrar("Sin conexion con\nel agente (ver log)");
 }
 
 void app_main(void) {
-    iniciar_usb();
     ESP_ERROR_CHECK(pantalla_iniciar());
     ESP_ERROR_CHECK(mic_iniciar());
-
-    pantalla_mostrar("Conectando WiFi...");
-    char texto[64];
-    static credenciales_t cred; // static: 2.2 KB no caben en la pila
-    if (wifi_conectar(15000) != ESP_OK) { // si no conecta seguimos: sigue reintentando en segundo plano
-        snprintf(texto, sizeof texto, "Sin WiFi\n(ver log: motivo)");
-    } else if (hora_sincronizar(10000) != ESP_OK) {
-        snprintf(texto, sizeof texto, "WiFi OK\nSin hora (SNTP)");
-    } else if (credenciales_obtener(&cred) != ESP_OK) {
-        snprintf(texto, sizeof texto, "WiFi OK\nAWS: error\n(ver log)");
-    } else {
-        snprintf(texto, sizeof texto, "WiFi OK\nAWS OK\nvence %.5s UTC", cred.expira + 11); // "HH:MM" de la fecha ISO
-    }
-    pantalla_mostrar(texto);
-    vTaskDelay(pdMS_TO_TICKS(2000)); // 2 s para leer el resultado
     gpio_config_t boton = {.pin_bit_mask = 1ULL << PIN_BOTON, .mode = GPIO_MODE_INPUT, .pull_up_en = true};
     ESP_ERROR_CHECK(gpio_config(&boton));
+
+    pantalla_mostrar("Conectando WiFi...");
+    if (wifi_conectar(15000) != ESP_OK) {
+        pantalla_mostrar("Sin WiFi\n(ver log: motivo)"); // sigue reintentando en segundo plano
+    } else if (hora_sincronizar(10000) != ESP_OK) {
+        pantalla_mostrar("Sin hora (SNTP):\nno se puede firmar");
+    } else {
+        conectar(); // la latencia de TLS + firma se paga aquí, al arrancar
+    }
 
     static int16_t pcm[MIC_MUESTRAS_TROZO]; // static: 3.2 KB no caben en la pila de app_main
     static const char BARRA[] = "|||||||||||||||||||||";
     _Static_assert(sizeof BARRA - 1 == TEXTO_COLS, "la barra debe medir una línea");
+    char texto[320];
+    agente_mensaje_t m;
     estado_t estado = ESPERANDO;
+    int desde_reintento = 0, esperando = 0;
 
     for (int i = 0;; i++) {
         ESP_ERROR_CHECK(mic_leer(pcm, MIC_MUESTRAS_TROZO)); // espera 100 ms de audio
         bool presionado = gpio_get_level(PIN_BOTON) == 0;   // leer cada 100 ms también evita los rebotes
-        const char *linea = leer_linea();
+
+        // Reconexión: con WiFi, sin WebSocket y sin estar en medio de una pregunta.
+        if (!agente_conectado() && estado != GRABANDO && wifi_ip()[0] && ++desde_reintento >= REINTENTO_VUELTAS) {
+            desde_reintento = 0;
+            conectar();
+            continue; // conectar tarda: se descarta este trozo de audio
+        }
 
         if (presionado && estado != GRABANDO) { // cualquier estado → grabando
-            estado = GRABANDO;
-            pantalla_mostrar("Escuchando...");
-            puts("<<AUDIO");
+            if (!agente_conectado()) {
+                pantalla_mostrar("Sin conexion:\nreintentando...");
+            } else {
+                while (agente_mensaje(&m)) {} // descartar respuestas viejas (de una pregunta abandonada)
+                estado = GRABANDO;
+                pantalla_mostrar("Escuchando...");
+            }
         } else if (!presionado && estado == GRABANDO) { // grabando → pensando
-            estado = PENSANDO;
-            puts(">>AUDIO");
+            estado = PENSANDO, esperando = 0;
+            agente_fin();
             pantalla_mostrar("Pensando...");
-        } else if (estado == PENSANDO && linea && strncmp(linea, "R:", 2) == 0) { // pensando → respuesta
-            estado = RESPUESTA;
-            pantalla_mostrar(linea + 2); // +2 salta el "R:"
         }
 
         if (estado == GRABANDO) {
-            enviar_hex(pcm, MIC_MUESTRAS_TROZO);
+            if (agente_enviar_audio(pcm, MIC_MUESTRAS_TROZO) != ESP_OK) {
+                estado = ESPERANDO;
+                pantalla_mostrar("Se perdio la\nconexion");
+            }
+        } else if (estado == PENSANDO) {
+            if (agente_mensaje(&m)) {
+                if (m.tipo == 't') {
+                    snprintf(texto, sizeof texto, "Tu: %s\n\nPensando...", m.texto);
+                    pantalla_mostrar(texto);
+                } else { // respuesta o error: fin de la pregunta
+                    snprintf(texto, sizeof texto, "%s%s", m.tipo == 'e' ? "Error: " : "", m.texto);
+                    pantalla_mostrar(texto);
+                    estado = RESPUESTA;
+                }
+            } else if (++esperando >= ESPERA_RESPUESTA) {
+                pantalla_mostrar("Sin respuesta,\nintenta de nuevo");
+                estado = ESPERANDO;
+            }
         } else if (estado == ESPERANDO) {
             int rms = audio_rms(pcm, MIC_MUESTRAS_TROZO);
-            snprintf(texto, sizeof texto, "Listo (BOOT=hablar)\n\nNivel: %d\n%.*s", rms,
+            snprintf(texto, sizeof texto, "%s\n\nNivel: %d\n%.*s", agente_conectado() ? "Listo (BOOT=hablar)" : "Sin conexion", rms,
                      audio_barras(rms, TEXTO_COLS), BARRA);
             pantalla_mostrar(texto);
             if (i % 10 == 0) ESP_LOGI(TAG, "nivel RMS: %d", rms); // 1 vez por segundo

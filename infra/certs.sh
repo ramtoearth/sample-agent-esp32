@@ -11,4 +11,6 @@ curl -sf https://www.amazontrust.com/repository/AmazonRootCA1.pem -o "$D/AmazonR
 # Sin salto de línea: el firmware lo incrusta tal cual como string (EMBED_TXTFILES agrega el '\0').
 aws iot describe-endpoint --endpoint-type iot:CredentialProvider --region us-east-1 \
   --query endpointAddress --output text | tr -d '\n' > "$D/endpoint.txt"
-echo "Certificados y endpoint en $D"
+aws cloudformation describe-stacks --stack-name Asistente --region us-east-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='AgenteArn'].OutputValue" --output text | tr -d '\n' > "$D/agente_arn.txt"
+echo "Certificados, endpoint y ARN del agente en $D"

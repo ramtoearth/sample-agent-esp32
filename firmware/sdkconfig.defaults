@@ -6,3 +6,7 @@ CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 # Tabla de particiones propia: dos apps de 1.94 MB (OTA). Ver partitions.csv.
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# El handshake del WebSocket lleva la URL prefirmada (~1.6 KB con el token): no cabe en el default de 1 KB.
+# Dinámico: el buffer se libera después de conectar.
+CONFIG_WS_BUFFER_SIZE=4096
+CONFIG_WS_DYNAMIC_BUFFER=y
