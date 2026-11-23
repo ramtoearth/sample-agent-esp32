@@ -26,8 +26,8 @@ class AsistenteStack(cdk.Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # Lo que puede hacer el dispositivo con sus credenciales temporales.
-        # Vacío a propósito: en 4d se agrega solo el permiso para invocar el agente en AgentCore.
+        # Lo que puede hacer el dispositivo con sus credenciales temporales (el permiso se agrega
+        # más abajo, cuando existe el runtime: solo abrir su WebSocket).
         rol = iam.Role(
             self,
             "RolDispositivo",
@@ -120,6 +120,14 @@ class AsistenteStack(cdk.Stack):
             description="Asistente de voz: Transcribe + Strands (Nova Micro)",
         )
         runtime.node.add_dependency(rol_agente)  # los permisos deben existir antes de arrancar el contenedor
+
+        # El único permiso del dispositivo: abrir el WebSocket de ESTE runtime (y sus endpoints).
+        rol.add_to_policy(
+            iam.PolicyStatement(
+                actions=["bedrock-agentcore:InvokeAgentRuntimeWithWebSocketStream"],
+                resources=[runtime.attr_agent_runtime_arn, f"{runtime.attr_agent_runtime_arn}/*"],
+            )
+        )
 
         # Logs: se borran solos a los 7 días (servidor.py no registra el contenido). AgentCore crea el
         # grupo al crear el runtime, así que no se puede crear antes: LogRetention ajusta el existente.
