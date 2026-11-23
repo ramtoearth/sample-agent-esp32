@@ -43,7 +43,7 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 3. ✅ Firmware: micrófono I2S + OLED + botón BOOT. Prueba de punta a punta por USB, con la laptop de puente:
    `cd agent && AWS_PROFILE=isengard uv run puente_usb.py` (solo escuchar: `uv run firmware/tools/grabar.py`)
 4. ESP32 → AWS directo (sin servidor en la LAN: sería accesible a toda la red WiFi sin auth estándar):
-   - ✅ 4a WiFi · 4b credenciales temporales de IoT Core (✅ infra en `infra/` con CDK, probado con curl; falta el firmware)
+   - ✅ 4a WiFi · ✅ 4b credenciales temporales de IoT Core desde el ESP32 (TLS mutuo + SNTP)
    - 4c agente en AgentCore (en el mismo stack de CDK) · 4d WebSocket SigV4
 5. + Polly y reproducción I2S (cuando llegue el ampli).
 
@@ -54,4 +54,5 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 - Si la red del SDK se traba, una tarea de awscrt queda huérfana (ver `voz.py`); vigilar memoria en AgentCore.
 - Nivel RMS en silencio alto (3000–14000) aunque el audio suena bien: revisar offset de DC.
 - WiFi + WebSocket agregan ~600 KB: agrandar la partición de la app (flash de 4 MB).
+- La llave privada va incrustada en la flash: activar **flash encryption** antes de dar el dispositivo por terminado. Si se pierde la placa: revocar el certificado en IoT Core.
 - Crear AWS Budget con alerta.

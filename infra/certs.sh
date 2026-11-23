@@ -8,5 +8,7 @@ CERT_ID=$(aws cloudformation describe-stacks --stack-name Asistente --region us-
 aws iot describe-certificate --certificate-id "$CERT_ID" --region us-east-1 \
   --query certificateDescription.certificatePem --output text > "$D/dispositivo.crt"
 curl -sf https://www.amazontrust.com/repository/AmazonRootCA1.pem -o "$D/AmazonRootCA1.pem"
-echo "Certificados en $D"
-echo "Endpoint de credenciales: $(aws iot describe-endpoint --endpoint-type iot:CredentialProvider --region us-east-1 --query endpointAddress --output text)"
+# Sin salto de línea: el firmware lo incrusta tal cual como string (EMBED_TXTFILES agrega el '\0').
+aws iot describe-endpoint --endpoint-type iot:CredentialProvider --region us-east-1 \
+  --query endpointAddress --output text | tr -d '\n' > "$D/endpoint.txt"
+echo "Certificados y endpoint en $D"

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "audio.h"
+#include "credenciales.h"
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
@@ -11,6 +12,7 @@
 #include "freertos/task.h"
 #include "mic.h"
 #include "pantalla.h"
+#include "hora.h"
 #include "texto.h"
 #include "wifi.h"
 
@@ -61,10 +63,15 @@ void app_main(void) {
 
     pantalla_mostrar("Conectando WiFi...");
     char texto[64];
-    if (wifi_conectar(15000) == ESP_OK) { // si no conecta seguimos: sigue reintentando en segundo plano
-        snprintf(texto, sizeof texto, "WiFi OK\n%s", wifi_ip());
-    } else {
+    static credenciales_t cred; // static: 2.2 KB no caben en la pila
+    if (wifi_conectar(15000) != ESP_OK) { // si no conecta seguimos: sigue reintentando en segundo plano
         snprintf(texto, sizeof texto, "Sin WiFi\n(ver log: motivo)");
+    } else if (hora_sincronizar(10000) != ESP_OK) {
+        snprintf(texto, sizeof texto, "WiFi OK\nSin hora (SNTP)");
+    } else if (credenciales_obtener(&cred) != ESP_OK) {
+        snprintf(texto, sizeof texto, "WiFi OK\nAWS: error\n(ver log)");
+    } else {
+        snprintf(texto, sizeof texto, "WiFi OK\nAWS OK\nvence %.5s UTC", cred.expira + 11); // "HH:MM" de la fecha ISO
     }
     pantalla_mostrar(texto);
     vTaskDelay(pdMS_TO_TICKS(2000)); // 2 s para leer el resultado
