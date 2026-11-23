@@ -14,12 +14,7 @@ import threading
 import serial  # pyserial (dependencia --dev)
 
 from agent import responder
-from voz import transcribir_en_vivo
-
-
-async def _hasta_none(cola: asyncio.Queue):
-    while (trozo := await cola.get()) is not None:
-        yield trozo
+from voz import transcribir_en_vivo, trozos_de_cola
 
 
 async def principal(esp: serial.Serial):
@@ -38,7 +33,7 @@ async def principal(esp: serial.Serial):
         linea = await lineas.get()
         if linea == "<<AUDIO":
             trozos = asyncio.Queue()
-            transcripcion = asyncio.create_task(transcribir_en_vivo(_hasta_none(trozos)))  # empieza ya
+            transcripcion = asyncio.create_task(transcribir_en_vivo(trozos_de_cola(trozos)))  # empieza ya
             print("\n🎙  escuchando...")
         elif linea.startswith("A:") and trozos is not None:
             trozos.put_nowait(bytes.fromhex(linea[2:]))

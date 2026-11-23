@@ -34,6 +34,8 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 | Puente USB (temporal) | ESP32 ⇄ laptop: `A:<hex>` audio, `R:<texto>` respuesta | Probar todo lo que no es red antes del WiFi |
 | Infraestructura | CDK en Python (`infra/`), un solo stack `Asistente` | Fuente única de verdad: `cdk deploy`/`destroy` crea/borra todo |
 | Llave del dispositivo | ECC P-256 generada en la Mac; a AWS solo va la CSR | La llave privada nunca sale de la Mac ni pasa por CloudFormation |
+| Protocolo del WebSocket | Binario = PCM de 100 ms; texto `fin`; respuestas JSON `{tipo, texto}` | La misma conexión sirve para varias preguntas; Transcribe arranca con el primer trozo |
+| Runtime | Red PUBLIC, invocación solo con SigV4 (403 sin firma), logs con retención de 7 días | Sin costo fijo; VPC costaría ~$15–35 al mes |
 | Cuenta / región | Perfil `isengard`, us-east-1 | Nova Micro y Nova Sonic on-demand + AgentCore |
 
 ## Pasos
@@ -44,7 +46,8 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
    `cd agent && AWS_PROFILE=isengard uv run puente_usb.py` (solo escuchar: `uv run firmware/tools/grabar.py`)
 4. ESP32 → AWS directo (sin servidor en la LAN: sería accesible a toda la red WiFi sin auth estándar):
    - ✅ 4a WiFi · ✅ 4b credenciales temporales de IoT Core desde el ESP32 (TLS mutuo + SNTP)
-   - 4c agente en AgentCore (en el mismo stack de CDK) · 4d WebSocket SigV4
+   - ✅ 4c agente en AgentCore (contenedor arm64 con Finch, mismo stack de CDK; probado con `probar_servidor.py --arn`)
+   - 4d el ESP32 abre el WebSocket firmado con SigV4 (permiso `bedrock-agentcore:InvokeAgentRuntimeWithWebSocketStream`)
 5. + Polly y reproducción I2S (cuando llegue el ampli).
 
 ## Pendientes / riesgos
@@ -55,4 +58,5 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 - Nivel RMS en silencio alto (3000–14000) aunque el audio suena bien: revisar offset de DC.
 - WiFi + WebSocket agregan ~600 KB: agrandar la partición de la app (flash de 4 MB).
 - La llave privada va incrustada en la flash: activar **flash encryption** antes de dar el dispositivo por terminado. Si se pierde la placa: revocar el certificado en IoT Core.
+- Al final del proyecto: borrar lo que quedó del agente viejo *nimbo* en us-west-2 (rol IAM `nimbo-mcpon-review-runtime-role` y repo ECR `nimbo-mcpon-review-agent`; el runtime ya se borró).
 - Crear AWS Budget con alerta.

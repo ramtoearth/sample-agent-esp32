@@ -75,6 +75,12 @@ async def transcribir_en_vivo(trozos: AsyncIterator[bytes]) -> str:
 _loop = asyncio.new_event_loop()
 
 
+async def trozos_de_cola(cola: asyncio.Queue) -> AsyncIterator[bytes]:
+    """Entrega los trozos que llegan a una cola hasta recibir None (fin del audio)."""
+    while (trozo := await cola.get()) is not None:
+        yield trozo
+
+
 async def _desde_bloque(pcm: bytes) -> AsyncIterator[bytes]:
     """Reparte un audio ya grabado a velocidad real (lo único estable, ver docs)."""
     for i in range(0, len(pcm), CHUNK):

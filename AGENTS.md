@@ -24,7 +24,7 @@ eim select v5.4.2 && source /Users/rmatah/.espressif/tools/activate_idf_v5.4.2.s
 
 ## Infraestructura (`infra/`, CDK en Python con uv) — fuente única de los recursos de AWS
 
-- Desde `infra/`: `AWS_PROFILE=isengard npx -y aws-cdk@latest diff` y luego `deploy` (el CLI global es viejo para la librería).
+- Desde `infra/`: `CDK_DOCKER=finch AWS_PROFILE=isengard npx -y aws-cdk@latest diff` y luego `deploy` (el CLI global es viejo para la librería; no hay Docker: la imagen del agente se construye con Finch, `finch vm start` si está apagada).
 - Siempre `diff` antes de `deploy`, y pedir confirmación al usuario antes de crear o borrar recursos.
 - Después de desplegar: `AWS_PROFILE=isengard ./certs.sh` baja el certificado y la CA a `firmware/certs/`.
 - `firmware/certs/` (con la llave privada del dispositivo) está ignorado por git: nunca leer, imprimir ni commitear la llave.
@@ -34,3 +34,4 @@ eim select v5.4.2 && source /Users/rmatah/.espressif/tools/activate_idf_v5.4.2.s
 - AWS: perfil `isengard`, región `us-east-1`. Si sale `LoginRefreshRequired`, el usuario debe correr `aws login --profile isengard`.
 - Correr: `cd agent && AWS_PROFILE=isengard uv run agent.py` (texto) o `uv run voz.py` (micrófono).
 - Prueba: `cd agent && uv run python test_agent.py`
+- Servidor de AgentCore (`servidor.py`, WebSocket `/ws`): local `uv run servidor.py` (solo 127.0.0.1) y `uv run probar_servidor.py audio.wav [--arn <ARN>]`. El ARN sale de `cdk deploy` (output `AgenteArn`).
