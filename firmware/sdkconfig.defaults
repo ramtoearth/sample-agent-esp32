@@ -3,3 +3,6 @@
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 # El ESP32-C3 SuperMini trae 4 MB de flash (verificado con `esptool.py flash_id`).
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+# Tabla de particiones propia: dos apps de 1.94 MB (OTA). Ver partitions.csv.
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

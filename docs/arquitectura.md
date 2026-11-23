@@ -28,6 +28,8 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 | Historial | `SlidingWindowConversationManager(window_size=10)` | Limita los tokens por turno |
 | Herramientas | Solo `hora_actual` (zona `America/Mexico_City`, pendiente de confirmar) | MVP |
 | Identidad del dispositivo | IoT Core: cert X.509 → credenciales temporales → SigV4 | No guardar llaves AWS en el chip |
+| Transporte del audio | WebSocket (no MQTT) | AgentCore acepta WebSocket; con MQTT haría falta un worker 24/7 para sostener el stream de Transcribe |
+| Base: [aws-iot-esp32-example](https://github.com/ramtoearth/aws-iot-esp32-example) | Se reutiliza: Terraform (Thing + cert + política mínima), secretos en archivo ignorado por git, certs incrustados al compilar, opciones de depuración en `sdkconfig.defaults` | Ya probado por el usuario |
 | Firmware | ESP-IDF v5.4.2; OLED con esp_lcd + fuente 5×7 propia; consola por USB-Serial-JTAG | Sin dependencias externas; UART0 (GPIO20/21) libre para la OLED. Ajustes en `firmware/sdkconfig.defaults` |
 | Puente USB (temporal) | ESP32 ⇄ laptop: `A:<hex>` audio, `R:<texto>` respuesta | Probar todo lo que no es red antes del WiFi |
 | Cuenta / región | Perfil `isengard`, us-east-1 | Nova Micro y Nova Sonic on-demand + AgentCore |
@@ -38,9 +40,9 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 2. ✅ + Transcribe con el micrófono de la Mac → `AWS_PROFILE=isengard uv run voz.py`
 3. ✅ Firmware: micrófono I2S + OLED + botón BOOT. Prueba de punta a punta por USB, con la laptop de puente:
    `cd agent && AWS_PROFILE=isengard uv run puente_usb.py` (solo escuchar: `uv run firmware/tools/grabar.py`)
-4. ESP32 → agente en la laptop por WebSocket (solo LAN, temporal).
-5. Despliegue en AgentCore + IoT Core/SigV4.
-6. + Polly y reproducción I2S (cuando llegue el ampli).
+4. ESP32 → AWS directo (sin servidor en la LAN: sería accesible a toda la red WiFi sin auth estándar):
+   - 4a WiFi · 4b Terraform + credenciales temporales de IoT Core · 4c agente en AgentCore · 4d WebSocket SigV4
+5. + Polly y reproducción I2S (cuando llegue el ampli).
 
 ## Pendientes / riesgos
 

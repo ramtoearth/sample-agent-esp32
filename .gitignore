@@ -9,3 +9,6 @@ firmware/.cache/
 
 # Grabaciones de prueba
 *.wav
+
+# Secretos del firmware (copiar de secretos.h.example)
+firmware/main/secretos.h

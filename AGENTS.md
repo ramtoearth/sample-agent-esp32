@@ -15,6 +15,7 @@ Hay que activar el entorno **en la misma línea de shell** que el comando (el en
 eim select v5.4.2 && source /Users/rmatah/.espressif/tools/activate_idf_v5.4.2.sh && cd firmware && idf.py build
 ```
 
+- Secretos (WiFi): `firmware/main/secretos.h`, ignorado por git; se crea copiando `secretos.h.example`. Nunca leerlo, imprimirlo ni commitearlo.
 - Flashear y ver el log: `idf.py -p <puerto> flash monitor`
 - Si `build/` da errores de ruta (el proyecto se movió de carpeta): `idf.py fullclean`
 - Pruebas en la Mac (sin placa), desde `firmware/`:

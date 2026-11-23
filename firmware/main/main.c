@@ -7,9 +7,12 @@
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "mic.h"
 #include "pantalla.h"
 #include "texto.h"
+#include "wifi.h"
 
 #define PIN_BOTON 9 // botón BOOT de la placa: 0 = presionado (pull-up)
 
@@ -55,13 +58,22 @@ void app_main(void) {
     iniciar_usb();
     ESP_ERROR_CHECK(pantalla_iniciar());
     ESP_ERROR_CHECK(mic_iniciar());
+
+    pantalla_mostrar("Conectando WiFi...");
+    char texto[64];
+    if (wifi_conectar(15000) == ESP_OK) { // si no conecta seguimos: sigue reintentando en segundo plano
+        snprintf(texto, sizeof texto, "WiFi OK\n%s", wifi_ip());
+    } else {
+        snprintf(texto, sizeof texto, "Sin WiFi\n(ver log: motivo)");
+    }
+    pantalla_mostrar(texto);
+    vTaskDelay(pdMS_TO_TICKS(2000)); // 2 s para leer el resultado
     gpio_config_t boton = {.pin_bit_mask = 1ULL << PIN_BOTON, .mode = GPIO_MODE_INPUT, .pull_up_en = true};
     ESP_ERROR_CHECK(gpio_config(&boton));
 
     static int16_t pcm[MIC_MUESTRAS_TROZO]; // static: 3.2 KB no caben en la pila de app_main
     static const char BARRA[] = "|||||||||||||||||||||";
     _Static_assert(sizeof BARRA - 1 == TEXTO_COLS, "la barra debe medir una línea");
-    char texto[64];
     estado_t estado = ESPERANDO;
 
     for (int i = 0;; i++) {
