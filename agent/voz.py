@@ -30,7 +30,7 @@ def _credenciales() -> AsyncStaticCredentialsResolver:
     )
 
 
-async def _transcribir(trozos: AsyncIterator[bytes]) -> str:
+async def transcribir_en_vivo(trozos: AsyncIterator[bytes]) -> str:
     """Manda los trozos a Transcribe conforme llegan. Deben llegar a ritmo ~real:
     si se mandan de golpe, el envío HTTP/2 se traba de forma intermitente."""
     client = AsyncTranscribeStreamingClient(
@@ -99,12 +99,12 @@ async def _desde_mic() -> AsyncIterator[bytes]:
 
 
 def transcribir(pcm: bytes) -> str:
-    return _loop.run_until_complete(_transcribir(_desde_bloque(pcm)))
+    return _loop.run_until_complete(transcribir_en_vivo(_desde_bloque(pcm)))
 
 
 def escuchar() -> str:
     """Graba del micrófono y transcribe al mismo tiempo."""
-    return _loop.run_until_complete(_transcribir(_desde_mic()))
+    return _loop.run_until_complete(transcribir_en_vivo(_desde_mic()))
 
 
 if __name__ == "__main__":

@@ -28,13 +28,16 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 | Historial | `SlidingWindowConversationManager(window_size=10)` | Limita los tokens por turno |
 | Herramientas | Solo `hora_actual` (zona `America/Mexico_City`, pendiente de confirmar) | MVP |
 | Identidad del dispositivo | IoT Core: cert X.509 → credenciales temporales → SigV4 | No guardar llaves AWS en el chip |
+| Firmware | ESP-IDF v5.4.2; OLED con esp_lcd + fuente 5×7 propia; consola por USB-Serial-JTAG | Sin dependencias externas; UART0 (GPIO20/21) libre para la OLED. Ajustes en `firmware/sdkconfig.defaults` |
+| Puente USB (temporal) | ESP32 ⇄ laptop: `A:<hex>` audio, `R:<texto>` respuesta | Probar todo lo que no es red antes del WiFi |
 | Cuenta / región | Perfil `isengard`, us-east-1 | Nova Micro y Nova Sonic on-demand + AgentCore |
 
 ## Pasos
 
 1. ✅ Agente Strands local con texto en consola → `cd agent && AWS_PROFILE=isengard uv run agent.py`
 2. ✅ + Transcribe con el micrófono de la Mac → `AWS_PROFILE=isengard uv run voz.py`
-3. Firmware: grabar con el micrófono y mostrar estados en la OLED.
+3. ✅ Firmware: micrófono I2S + OLED + botón BOOT. Prueba de punta a punta por USB, con la laptop de puente:
+   `cd agent && AWS_PROFILE=isengard uv run puente_usb.py` (solo escuchar: `uv run firmware/tools/grabar.py`)
 4. ESP32 → agente en la laptop por WebSocket (solo LAN, temporal).
 5. Despliegue en AgentCore + IoT Core/SigV4.
 6. + Polly y reproducción I2S (cuando llegue el ampli).
@@ -44,4 +47,6 @@ ESP32-C3 ──WebSocket + SigV4─► AgentCore Runtime (us-east-1)
 - Futuro: Nova 2 Sonic (voz a voz, Strands BidiAgent) disponible en us-east-1 → reemplazaría Transcribe + Polly.
 - Futuro: ESP32-S3 para palabra de activación.
 - Si la red del SDK se traba, una tarea de awscrt queda huérfana (ver `voz.py`); vigilar memoria en AgentCore.
+- Nivel RMS en silencio alto (3000–14000) aunque el audio suena bien: revisar offset de DC.
+- WiFi + WebSocket agregan ~600 KB: agrandar la partición de la app (flash de 4 MB).
 - Crear AWS Budget con alerta.

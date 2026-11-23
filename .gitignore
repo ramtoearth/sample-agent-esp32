@@ -5,3 +5,7 @@ sdkconfig.old
 
 # macOS
 .DS_Store
+firmware/.cache/
+
+# Grabaciones de prueba
+*.wav

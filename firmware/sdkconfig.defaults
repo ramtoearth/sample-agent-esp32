@@ -1,0 +1,5 @@
+# Ajustes del proyecto (se aplican al regenerar sdkconfig: borrarlo y `idf.py reconfigure`).
+# Consola por el USB nativo; la UART0 (GPIO20/21) queda libre para el I2C de la OLED.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# El ESP32-C3 SuperMini trae 4 MB de flash (verificado con `esptool.py flash_id`).
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
