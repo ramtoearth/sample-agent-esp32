@@ -1,0 +1,9 @@
+[project]
+name = "infra"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "aws-cdk-lib>=2.278.0",
+    "constructs>=10.8.1",
+]

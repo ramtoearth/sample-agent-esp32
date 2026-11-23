@@ -12,3 +12,6 @@ firmware/.cache/
 
 # Secretos del firmware (copiar de secretos.h.example)
 firmware/main/secretos.h
+
+# Llave privada y certificados del dispositivo (nunca a git)
+firmware/certs/

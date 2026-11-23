@@ -22,6 +22,13 @@ eim select v5.4.2 && source /Users/rmatah/.espressif/tools/activate_idf_v5.4.2.s
   - Texto: `cc -fsanitize=address -I main test/test_texto.c main/texto.c -o /tmp/test_texto && /tmp/test_texto`
   - Audio: `cc -fsanitize=address -I main test/test_audio.c main/audio.c -lm -o /tmp/test_audio && /tmp/test_audio`
 
+## Infraestructura (`infra/`, CDK en Python con uv) — fuente única de los recursos de AWS
+
+- Desde `infra/`: `AWS_PROFILE=isengard npx -y aws-cdk@latest diff` y luego `deploy` (el CLI global es viejo para la librería).
+- Siempre `diff` antes de `deploy`, y pedir confirmación al usuario antes de crear o borrar recursos.
+- Después de desplegar: `AWS_PROFILE=isengard ./certs.sh` baja el certificado y la CA a `firmware/certs/`.
+- `firmware/certs/` (con la llave privada del dispositivo) está ignorado por git: nunca leer, imprimir ni commitear la llave.
+
 ## Agente (`agent/`, Python 3.12 con uv)
 
 - AWS: perfil `isengard`, región `us-east-1`. Si sale `LoginRefreshRequired`, el usuario debe correr `aws login --profile isengard`.
